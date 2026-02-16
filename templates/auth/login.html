@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Вход - Школьная столовая{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-box-arrow-in-right text-primary"></i> Вход
+                </h2>
+                
+                <div id="errorAlert" class="alert alert-danger d-none"></div>
+                
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required 
+                               placeholder="Введите ваш email">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Пароль</label>
+                        <input type="password" class="form-control" id="password" name="password" required 
+                               placeholder="Введите ваш пароль">
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="loginBtn">
+                            <span class="spinner-border spinner-border-sm d-none" id="loginSpinner"></span>
+                            Войти
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <p class="text-center mb-0">
+                    Нет аккаунта? <a href="/register">Зарегистрируйтесь</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    if (!loginForm) {
+        console.error('Login form not found!');
+        return;
+    }
+
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const errorAlert = document.getElementById('errorAlert');
+        const loginBtn = document.getElementById('loginBtn');
+        const spinner = document.getElementById('loginSpinner');
+        
+        loginBtn.disabled = true;
+        spinner.classList.remove('d-none');
+        errorAlert.classList.add('d-none');
+        
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ email, password })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+                
+                const role = data.user.role;
+                if (role === 'admin') {
+                    window.location.href = '/admin/dashboard';
+                } else if (role === 'cook') {
+                    window.location.href = '/cook/dashboard';
+                } else {
+                    window.location.href = '/student/dashboard';
+                }
+            } else {
+                errorAlert.textContent = data.error || 'Ошибка входа';
+                errorAlert.classList.remove('d-none');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            errorAlert.textContent = 'Ошибка сети. Попробуйте снова.';
+            errorAlert.classList.remove('d-none');
+        } finally {
+            loginBtn.disabled = false;
+            spinner.classList.add('d-none');
+        }
+    });
+});
+</script>
+{% endblock %}

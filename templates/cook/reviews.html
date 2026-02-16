@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Отзывы - Школьная столовая{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-star text-warning"></i> Отзывы учеников
+            </h2>
+            <p class="text-muted mb-0">Просмотр отзывов о блюдах от учеников</p>
+        </div>
+        <div class="mt-2 mt-sm-0">
+            <span class="badge bg-light text-dark border" id="reviewsCount">0 отзывов</span>
+        </div>
+    </div>
+</div>
+
+<div class="content-card">
+    <div class="content-card-header">
+        <div class="d-flex align-items-center">
+            <div class="header-icon">
+                <i class="bi bi-chat-square-text"></i>
+            </div>
+            <h5 class="mb-0">Все отзывы</h5>
+        </div>
+    </div>
+    <div class="content-card-body">
+        <div id="reviewsLoading" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Загрузка...</span>
+            </div>
+            <p class="text-muted mt-2 mb-0">Загрузка отзывов...</p>
+        </div>
+        <div id="reviewsContent" class="d-none">
+            <div class="mb-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Поиск по блюду...">
+                </div>
+            </div>
+            <div id="reviewsList" class="review-list"></div>
+        </div>
+        <div id="noReviews" class="empty-state d-none">
+            <div class="empty-state-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <p class="empty-state-text">Отзывов пока нет</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireRole('cook');
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadReviews();
+    
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+        filterReviews(e.target.value);
+    });
+});
+
+let allReviews = [];
+
+async function loadReviews() {
+    const loadingEl = document.getElementById('reviewsLoading');
+    const contentEl = document.getElementById('reviewsContent');
+    const noReviewsEl = document.getElementById('noReviews');
+    const listEl = document.getElementById('reviewsList');
+    const countEl = document.getElementById('reviewsCount');
+    
+    try {
+        const response = await Auth.apiCall('/api/cook/reviews');
+        
+        if (response.ok) {
+            const data = await response.json();
+            allReviews = data.reviews || [];
+            
+            countEl.textContent = `${allReviews.length} отзывов`;
+            
+            if (allReviews.length === 0) {
+                loadingEl.classList.add('d-none');
+                noReviewsEl.classList.remove('d-none');
+                return;
+            }
+            
+            renderReviews(allReviews);
+            
+            loadingEl.classList.add('d-none');
+            contentEl.classList.remove('d-none');
+        }
+    } catch (error) {
+        console.error('Error loading reviews:', error);
+        loadingEl.classList.add('d-none');
+        noReviewsEl.classList.remove('d-none');
+    }
+}
+
+function renderReviews(reviews) {
+    const listEl = document.getElementById('reviewsList');
+    
+    if (reviews.length === 0) {
+        listEl.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <p class="empty-state-text">Ничего не найдено</p>
+            </div>
+        `;
+        return;
+    }
+    
+    listEl.innerHTML = reviews.map(r => `
+        <div class="review-item">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="review-dish">${r.dish?.name || 'Неизвестное блюдо'}</div>
+                    <div class="review-stars text-warning">${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</div>
+                </div>
+                <small class="review-date">${new Date(r.created_at).toLocaleDateString()}</small>
+            </div>
+            <p class="review-comment">${r.comment || ''}</p>
+            <div class="review-author">
+                <i class="bi bi-person-circle"></i> ${r.user?.full_name || 'Аноним'}
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterReviews(query) {
+    const lowerQuery = query.toLowerCase();
+    const filtered = allReviews.filter(r => {
+        const dishName = r.dish?.name?.toLowerCase() || '';
+        const userName = r.user?.full_name?.toLowerCase() || '';
+        const comment = r.comment?.toLowerCase() || '';
+        return dishName.includes(lowerQuery) || userName.includes(lowerQuery) || comment.includes(lowerQuery);
+    });
+    renderReviews(filtered);
+}
+</script>
+
+<style>
+.review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.review-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+}
+
+.review-dish {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9375rem;
+}
+
+.review-stars {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.review-comment {
+    margin: 0.5rem 0;
+    color: #495057;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
+.review-author {
+    font-size: 0.8125rem;
+    color: #6c757d;
+}
+
+.review-author i {
+    margin-right: 0.25rem;
+}
+
+.review-date {
+    color: #adb5bd;
+    font-size: 0.75rem;
+}
+</style>
+{% endblock %}

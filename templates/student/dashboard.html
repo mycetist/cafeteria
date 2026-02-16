@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}Панель ученика - Школьная столовая{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-speedometer2 text-primary"></i> Панель ученика
+            </h2>
+            <p class="text-muted mb-0">Добро пожаловать, <strong>{{ current_user.full_name }}</strong>!</p>
+        </div>
+        <div class="mt-2 mt-sm-0">
+            <span class="badge bg-light text-dark border" id="currentDate">
+                <i class="bi bi-calendar3 me-1"></i> --.--.----
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card stat-card-primary">
+            <div class="stat-icon">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Абонемент</div>
+                <div class="stat-value" id="subscriptionStatus">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card stat-card-success">
+            <div class="stat-icon">
+                <i class="bi bi-egg-fried"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Осталось блюд</div>
+                <div class="stat-value" id="mealsRemaining">-</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card stat-card-warning">
+            <div class="stat-icon">
+                <i class="bi bi-menu-button"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Меню на сегодня</div>
+                <div class="stat-value" id="todayMenu">-</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="stat-card stat-card-info">
+            <div class="stat-icon">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Баланс</div>
+                <div class="stat-value" id="balance">Загрузка...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="meal-confirm-card" id="mealConfirmCard">
+            <div class="meal-confirm-content">
+                <div id="mealConfirmLoading" class="text-center py-4">
+                    <div class="spinner-border text-white" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="text-white-50 mt-2 mb-0">Проверка статуса...</p>
+                </div>
+                <div id="mealConfirmContent" class="d-none">
+                    <div class="meal-status-row d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 pb-3 border-bottom border-white border-opacity-25">
+                        <div class="d-flex align-items-center">
+                            <div class="meal-confirm-icon me-3">
+                                <i class="bi bi-sunrise"></i>
+                            </div>
+                            <div>
+                                <h5 class="meal-confirm-title mb-1">Завтрак</h5>
+                                <p class="meal-confirm-status mb-0" id="breakfastStatus">-</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-light" id="confirmBreakfastBtn" data-bs-toggle="modal" data-bs-target="#mealConfirmModal" onclick="setMealType('breakfast')">
+                            <i class="bi bi-check2-circle me-2"></i> Подтвердить завтрак
+                        </button>
+                    </div>
+                    <div class="meal-status-row d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center">
+                            <div class="meal-confirm-icon me-3">
+                                <i class="bi bi-sun"></i>
+                            </div>
+                            <div>
+                                <h5 class="meal-confirm-title mb-1">Обед</h5>
+                                <p class="meal-confirm-status mb-0" id="lunchStatus">-</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-light" id="confirmLunchBtn" data-bs-toggle="modal" data-bs-target="#mealConfirmModal" onclick="setMealType('lunch')">
+                            <i class="bi bi-check2-circle me-2"></i> Подтвердить обед
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <h5 class="section-title mb-3">Быстрые действия</h5>
+        <div class="quick-actions-grid">
+            <a href="/student/menu" class="quick-action-btn">
+                <div class="quick-action-icon">
+                    <i class="bi bi-menu-button-wide"></i>
+                </div>
+                <div class="quick-action-label">Посмотреть меню</div>
+            </a>
+            <a href="/student/payment" class="quick-action-btn">
+                <div class="quick-action-icon">
+                    <i class="bi bi-credit-card"></i>
+                </div>
+                <div class="quick-action-label">Оплатить</div>
+            </a>
+            <a href="/student/allergies" class="quick-action-btn">
+                <div class="quick-action-icon">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+                <div class="quick-action-label">Аллергии</div>
+            </a>
+            <a href="/student/reviews" class="quick-action-btn">
+                <div class="quick-action-icon">
+                    <i class="bi bi-star-fill"></i>
+                </div>
+                <div class="quick-action-label">Мои отзывы</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div class="d-flex align-items-center">
+                    <div class="header-icon">
+                        <i class="bi bi-calendar-day"></i>
+                    </div>
+                    <h5 class="mb-0">Меню на сегодня</h5>
+                </div>
+                <a href="/student/menu" class="btn btn-primary btn-sm">
+                    Полное меню <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="content-card-body">
+                <div id="menuLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Загрузка меню...</p>
+                </div>
+                <div id="menuContent" class="d-none">
+                    <div class="menu-items-grid" id="menuItems"></div>
+                </div>
+                <div id="noMenu" class="empty-state d-none">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-calendar-x"></i>
+                    </div>
+                    <p class="empty-state-text">На сегодня меню недоступно</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div class="d-flex align-items-center">
+                    <div class="header-icon header-icon-secondary">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h5 class="mb-0">Последняя активность</h5>
+                </div>
+            </div>
+            <div class="content-card-body p-0">
+                <div id="activityLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                </div>
+                <div id="activityContent" class="d-none">
+                    <ul class="activity-list" id="activityList"></ul>
+                </div>
+                <div id="noActivity" class="empty-state d-none">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-inbox"></i>
+                    </div>
+                    <p class="empty-state-text">Нет недавней активности</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="mealConfirmModal" tabindex="-1" aria-labelledby="mealConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="mealConfirmModalLabel">
+                    <i class="bi bi-utensils me-2"></i> Подтверждение получения питания
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <form id="mealConfirmForm">
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Выберите тип питания:</label>
+                        <div class="meal-type-options">
+                            <div class="form-check meal-type-option">
+                                <input class="form-check-input" type="radio" name="mealType" id="mealBreakfast" value="breakfast" checked>
+                                <label class="form-check-label" for="mealBreakfast">
+                                    <i class="bi bi-sunrise me-2"></i> Завтрак
+                                </label>
+                            </div>
+                            <div class="form-check meal-type-option">
+                                <input class="form-check-input" type="radio" name="mealType" id="mealLunch" value="lunch">
+                                <label class="form-check-label" for="mealLunch">
+                                    <i class="bi bi-sun me-2"></i> Обед
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info d-flex align-items-start mb-0" id="mealConfirmInfo">
+                        <i class="bi bi-info-circle me-2 mt-1"></i>
+                        <span id="mealConfirmInfoText">Проверка абонемента...</span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-success" id="submitMealConfirm" onclick="confirmMeal()">
+                    <i class="bi bi-check-lg me-2"></i> Подтвердить
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="mealConfirmToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="toastHeader">
+            <i class="bi bi-check-circle me-2" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitle">Уведомление</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+        </div>
+        <div class="toast-body" id="toastMessage"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/student.js') }}?v=20260209184800"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    document.getElementById('currentDate').innerHTML = `<i class="bi bi-calendar3 me-1"></i> ${dateStr}`;
+    
+    loadDashboardData();
+    loadTodayMenu();
+    loadRecentActivity();
+    checkMealConfirmationStatus();
+});
+
+async function checkMealConfirmationStatus() {
+    const loadingEl = document.getElementById('mealConfirmLoading');
+    const contentEl = document.getElementById('mealConfirmContent');
+    const cardEl = document.getElementById('mealConfirmCard');
+    
+    const breakfastStatusEl = document.getElementById('breakfastStatus');
+    const breakfastBtn = document.getElementById('confirmBreakfastBtn');
+    
+    const lunchStatusEl = document.getElementById('lunchStatus');
+    const lunchBtn = document.getElementById('confirmLunchBtn');
+    
+    try {
+        const statusResponse = await Auth.apiCall('/api/meals/today-status');
+        
+        if (!statusResponse.ok) {
+            throw new Error('Failed to fetch meal status');
+        }
+        
+        const statusData = await statusResponse.json();
+        
+        loadingEl.classList.add('d-none');
+        contentEl.classList.remove('d-none');
+        
+        if (statusData.breakfast.claimed) {
+            breakfastStatusEl.innerHTML = '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Получено</span>';
+            breakfastBtn.disabled = true;
+            breakfastBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Получено';
+        } else if (statusData.breakfast.can_claim) {
+            breakfastStatusEl.innerHTML = '<span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Ожидает получения</span>';
+            breakfastBtn.disabled = false;
+            breakfastBtn.innerHTML = '<i class="bi bi-check2-circle me-2"></i> Подтвердить завтрак';
+        } else {
+            breakfastStatusEl.innerHTML = '<span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Недоступно</span>';
+            breakfastBtn.disabled = true;
+            breakfastBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i> Недоступно';
+        }
+        
+        if (statusData.lunch.claimed) {
+            lunchStatusEl.innerHTML = '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Получено</span>';
+            lunchBtn.disabled = true;
+            lunchBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Получено';
+        } else if (statusData.lunch.can_claim) {
+            lunchStatusEl.innerHTML = '<span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> Ожидает получения</span>';
+            lunchBtn.disabled = false;
+            lunchBtn.innerHTML = '<i class="bi bi-check2-circle me-2"></i> Подтвердить обед';
+        } else {
+            lunchStatusEl.innerHTML = '<span class="badge bg-secondary"><i class="bi bi-x-circle"></i> Недоступно</span>';
+            lunchBtn.disabled = true;
+            lunchBtn.innerHTML = '<i class="bi bi-x-circle me-2"></i> Недоступно';
+        }
+        
+        const bothClaimed = statusData.breakfast.claimed && statusData.lunch.claimed;
+        const anyClaimed = statusData.breakfast.claimed || statusData.lunch.claimed;
+        const anyAvailable = statusData.breakfast.can_claim || statusData.lunch.can_claim;
+        
+        if (bothClaimed) {
+            cardEl.className = 'meal-confirm-card meal-confirm-success';
+        } else if (anyAvailable) {
+            cardEl.className = 'meal-confirm-card meal-confirm-active';
+        } else if (anyClaimed) {
+            cardEl.className = 'meal-confirm-card meal-confirm-success';
+        } else {
+            cardEl.className = 'meal-confirm-card meal-confirm-warning';
+        }
+        
+        const infoTextEl = document.getElementById('mealConfirmInfoText');
+        if (statusData.subscription_active) {
+            infoTextEl.textContent = `У вас активный абонемент. Осталось приёмов пищи: ${statusData.meals_remaining}`;
+        } else if (statusData.breakfast.has_purchase || statusData.lunch.has_purchase) {
+            infoTextEl.textContent = 'У вас есть купленные блюда на сегодня.';
+        } else {
+            infoTextEl.innerHTML = 'У вас нет активного абонемента или купленных блюд. <a href="/student/menu" class="alert-link">Купить блюдо</a> или <a href="/student/payment" class="alert-link">оформить абонемент</a>';
+        }
+        
+    } catch (error) {
+        console.error('Error checking meal confirmation status:', error);
+        loadingEl.classList.add('d-none');
+        contentEl.classList.remove('d-none');
+        cardEl.className = 'meal-confirm-card meal-confirm-error';
+        breakfastStatusEl.innerHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Ошибка</span>';
+        lunchStatusEl.innerHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Ошибка</span>';
+        breakfastBtn.disabled = true;
+        lunchBtn.disabled = true;
+    }
+}
+
+function setMealType(type) {
+    const breakfastRadio = document.getElementById('mealBreakfast');
+    const lunchRadio = document.getElementById('mealLunch');
+    
+    if (type === 'breakfast') {
+        breakfastRadio.checked = true;
+    } else {
+        lunchRadio.checked = true;
+    }
+}
+
+async function confirmMeal() {
+    const mealType = document.querySelector('input[name="mealType"]:checked').value;
+    const submitBtn = document.getElementById('submitMealConfirm');
+    const modal = bootstrap.Modal.getInstance(document.getElementById('mealConfirmModal'));
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Подтверждение...';
+    
+    try {
+        const purchasesResponse = await Auth.apiCall('/api/purchases');
+        let unusedPurchase = null;
+        
+        if (purchasesResponse.ok) {
+            const purchasesData = await purchasesResponse.json();
+            const today = new Date().toISOString().split('T')[0];
+            if (purchasesData.purchases) {
+                unusedPurchase = purchasesData.purchases.find(p => 
+                    !p.is_used && 
+                    p.purchase_date && p.purchase_date.startsWith(today) &&
+                    (p.meal_type === mealType || (!p.meal_type && mealType === 'lunch'))
+                );
+            }
+        }
+        
+        let response;
+        if (unusedPurchase) {
+            response = await Auth.apiCall(`/api/purchases/${unusedPurchase.id}/use`, {
+                method: 'POST'
+            });
+        } else {
+            response = await Auth.apiCall('/api/meal/confirm', {
+                method: 'POST',
+                body: JSON.stringify({ meal_type: mealType })
+            });
+        }
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            modal.hide();
+            const mealTypeRu = mealType === 'breakfast' ? 'Завтрак' : 'Обед';
+            showToast('success', 'Успешно', `${mealTypeRu} успешно подтверждён!`);
+            checkMealConfirmationStatus();
+            loadRecentActivity();
+        } else if (response.status === 409) {
+            modal.hide();
+            showToast('warning', 'Внимание', data.error || 'Вы уже подтвердили получение этого приёма пищи сегодня.');
+            checkMealConfirmationStatus();
+        } else if (response.status === 403) {
+            modal.hide();
+            showToast('warning', 'Нет доступа', data.error || 'У вас закончились доступные приёмы пищи.');
+            checkMealConfirmationStatus();
+        } else {
+            showToast('danger', 'Ошибка', data.error || 'Не удалось подтвердить питание');
+        }
+    } catch (error) {
+        console.error('Error confirming meal:', error);
+        showToast('danger', 'Ошибка', 'Произошла ошибка при подтверждении');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check-lg me-2"></i> Подтвердить';
+    }
+}
+
+function showToast(type, title, message) {
+    const toastEl = document.getElementById('mealConfirmToast');
+    const toastHeader = document.getElementById('toastHeader');
+    const toastIcon = document.getElementById('toastIcon');
+    const toastTitle = document.getElementById('toastTitle');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    toastHeader.className = 'toast-header bg-' + type + ' text-white';
+    toastIcon.className = 'bi me-2 ' + (type === 'success' ? 'bi-check-circle' : type === 'warning' ? 'bi-exclamation-triangle' : 'bi-x-circle');
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+</script>
+{% endblock %}

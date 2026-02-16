@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Заявки на закупку - Школьная столовая{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-cart-plus text-primary"></i> Заявки на закупку
+            </h2>
+            <p class="text-muted mb-0">Создание и отслеживание заявок на закупку ингредиентов</p>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div class="d-flex align-items-center">
+                    <div class="header-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <h5 class="mb-0">Новая заявка</h5>
+                </div>
+            </div>
+            <div class="content-card-body">
+                <form id="requestForm">
+                    <div id="itemsContainer" class="mb-3">
+                        <div class="item-row mb-2">
+                            <div class="row g-2">
+                                <div class="col-7">
+                                    <select class="form-select form-select-sm ingredient-select" required>
+                                        <option value="">Выберите ингредиент...</option>
+                                    </select>
+                                </div>
+                                <div class="col-3">
+                                    <input type="number" class="form-control form-control-sm quantity-input" placeholder="Кол-во" min="0.1" max="9999999.99" step="0.1" required>
+                                </div>
+                                <div class="col-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeItem(this)" disabled>
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="addItem()">
+                        <i class="bi bi-plus"></i> Добавить позицию
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-send me-1"></i> Отправить заявку
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-7">
+        <div class="content-card">
+            <div class="content-card-header">
+                <div class="d-flex align-items-center">
+                    <div class="header-icon header-icon-secondary">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h5 class="mb-0">Мои заявки</h5>
+                </div>
+            </div>
+            <div class="content-card-body p-0">
+                <div id="requestsLoading" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <p class="text-muted mt-2 mb-0">Загрузка заявок...</p>
+                </div>
+                <div id="requestsContent" class="d-none">
+                    <div class="request-list" id="requestsList"></div>
+                </div>
+                <div id="errorRequests" class="empty-state d-none">
+                    <div class="empty-state-icon">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <p class="empty-state-text" id="errorRequestsText">Ошибка загрузки заявок</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="requestToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" id="requestToastHeader">
+            <i class="bi bi-info-circle me-2" id="requestToastIcon"></i>
+            <strong class="me-auto" id="requestToastTitle">Уведомление</strong>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Закрыть"></button>
+        </div>
+        <div class="toast-body" id="requestToastMessage"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+requireRole('cook');
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadIngredients();
+    loadMyRequests();
+    
+    document.getElementById('requestForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const items = [];
+        document.querySelectorAll('.item-row').forEach(row => {
+            const ingredientId = row.querySelector('.ingredient-select').value;
+            const quantity = row.querySelector('.quantity-input').value;
+            if (ingredientId && quantity) {
+                items.push({
+                    ingredient_id: parseInt(ingredientId),
+                    quantity: parseFloat(quantity)
+                });
+            }
+        });
+        
+        if (items.length === 0) {
+            showToast('warning', 'Внимание', 'Добавьте хотя бы одну позицию');
+            return;
+        }
+        
+        try {
+            const response = await Auth.apiCall('/api/cook/purchase-requests', {
+                method: 'POST',
+                body: JSON.stringify({ items })
+            });
+            
+            if (response.ok) {
+                document.getElementById('requestForm').reset();
+                const container = document.getElementById('itemsContainer');
+                container.innerHTML = `
+                    <div class="item-row mb-2">
+                        <div class="row g-2">
+                            <div class="col-7">
+                                <select class="form-select form-select-sm ingredient-select" required>
+                                    <option value="">Выберите ингредиент...</option>
+                                </select>
+                            </div>
+                            <div class="col-3">
+                                <input type="number" class="form-control form-control-sm quantity-input" placeholder="Кол-во" min="0.1" max="9999999.99" step="0.1" required>
+                            </div>
+                            <div class="col-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeItem(this)" disabled>
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                loadIngredients();
+                loadMyRequests();
+                showToast('success', 'Успешно', 'Заявка успешно отправлена!');
+            } else {
+                const data = await response.json();
+                showToast('danger', 'Ошибка', data.error || 'Не удалось отправить заявку');
+            }
+        } catch (error) {
+            console.error('Error submitting request:', error);
+            showToast('danger', 'Ошибка', 'Ошибка при отправке заявки');
+        }
+    });
+});
+
+async function loadIngredients() {
+    try {
+        const response = await Auth.apiCall('/api/cook/inventory');
+        if (response.ok) {
+            const data = await response.json();
+            const options = data.inventory.map(i => 
+                `<option value="${i.ingredient.id}">${i.ingredient.name}</option>`
+            ).join('');
+            
+            document.querySelectorAll('.ingredient-select').forEach(select => {
+                select.innerHTML = '<option value="">Выберите ингредиент...</option>' + options;
+            });
+        }
+    } catch (error) {
+        console.error('Error loading ingredients:', error);
+    }
+}
+
+async function loadMyRequests() {
+    const loadingEl = document.getElementById('requestsLoading');
+    const contentEl = document.getElementById('requestsContent');
+    const errorRequestsEl = document.getElementById('errorRequests');
+    const listEl = document.getElementById('requestsList');
+    
+    try {
+        const response = await Auth.apiCall('/api/cook/purchase-requests');
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            if (data.purchase_requests && data.purchase_requests.length > 0) {
+                listEl.innerHTML = data.purchase_requests.map(r => `
+                    <div class="request-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="request-id">Заявка #${r.id}</div>
+                                <small class="text-muted">${new Date(r.created_at).toLocaleDateString('ru-RU')}</small>
+                            </div>
+                            <span class="badge bg-${r.status === 'approved' ? 'success' : r.status === 'rejected' ? 'danger' : 'warning'}" style="font-size: 0.75rem;">
+                                ${r.status === 'approved' ? 'Одобрено' : r.status === 'rejected' ? 'Отклонено' : 'Ожидает'}
+                            </span>
+                        </div>
+                        <div class="request-items">${r.items.length || 0} позиций</div>
+                    </div>
+                `).join('');
+                
+                loadingEl.classList.add('d-none');
+                contentEl.classList.remove('d-none');
+            } else {
+                loadingEl.classList.add('d-none');
+                errorRequestsEl.classList.remove('d-none');
+                document.getElementById('errorRequestsText').textContent = 'У вас пока нет заявок';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading requests:', error);
+        loadingEl.classList.add('d-none');
+        document.getElementById('errorRequests').classList.remove('d-none');
+        document.getElementById('errorRequestsText').textContent = `Ошибка загрузки: ${error.message}`;
+    }
+}
+
+function addItem() {
+    const container = document.getElementById('itemsContainer');
+    const newRow = container.firstElementChild.cloneNode(true);
+    newRow.querySelector('.ingredient-select').value = '';
+    newRow.querySelector('.quantity-input').value = '';
+    newRow.querySelector('button').disabled = false;
+    container.appendChild(newRow);
+    
+    const options = container.querySelector('.ingredient-select').innerHTML;
+    newRow.querySelector('.ingredient-select').innerHTML = options;
+}
+
+function removeItem(btn) {
+    btn.closest('.item-row').remove();
+}
+
+function showToast(type, title, message) {
+    const toastEl = document.getElementById('requestToast');
+    const toastHeader = document.getElementById('requestToastHeader');
+    const toastIcon = document.getElementById('requestToastIcon');
+    const toastTitle = document.getElementById('requestToastTitle');
+    const toastMessage = document.getElementById('requestToastMessage');
+    
+    toastHeader.className = 'toast-header bg-' + type + ' text-white';
+    toastIcon.className = 'bi me-2 ' + (type === 'success' ? 'bi-check-circle' : type === 'warning' ? 'bi-exclamation-triangle' : type === 'danger' ? 'bi-x-circle' : 'bi-info-circle');
+    toastTitle.textContent = title;
+    toastMessage.textContent = message;
+    
+    const toast = new bootstrap.Toast(toastEl);
+    toast.show();
+}
+</script>
+
+<style>
+.request-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.request-item {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.request-item:last-child {
+    border-bottom: none;
+}
+
+.request-id {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9375rem;
+}
+
+.request-items {
+    font-size: 0.8125rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.item-row {
+    background: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 6px;
+}
+</style>
+{% endblock %}
