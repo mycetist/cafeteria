@@ -1,5 +1,7 @@
 # Система управления школьной столовой
 
+![Превью сайта](static/images/site-preview.png)
+
 ## Технологии
 
 **Backend:** Python / Flask
