@@ -96,12 +96,7 @@
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
-                <div class="date-quick-select">
-                    <input type="date" class="date-picker-hidden" id="menuDate">
-                    <button type="button" class="date-quick-btn" id="customDateBtn">
-                        <i class="bi bi-calendar3"></i>
-                    </button>
-                </div>
+
             </div>
         </div>
     </div>
@@ -143,10 +138,8 @@ function showToast(message, isError = false) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const dateInput = document.getElementById('menuDate');
     const prevBtn = document.getElementById('prevDay');
     const nextBtn = document.getElementById('nextDay');
-    const customDateBtn = document.getElementById('customDateBtn');
     const breakfastBtn = document.getElementById('breakfastBtn');
     const lunchBtn = document.getElementById('lunchBtn');
     
@@ -170,15 +163,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     prevBtn.addEventListener('click', function() {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() - 1);
         newDate.setHours(0, 0, 0, 0);
         
-        if (newDate >= yesterday) {
+        if (newDate >= today) {
             currentDate.setDate(currentDate.getDate() - 1);
             updateDateDisplay();
             loadMenu(formatDate(currentDate));
@@ -189,29 +181,6 @@ document.addEventListener('DOMContentLoaded', function() {
         currentDate.setDate(currentDate.getDate() + 1);
         updateDateDisplay();
         loadMenu(formatDate(currentDate));
-    });
-    
-    customDateBtn.addEventListener('click', function() {
-        dateInput.showPicker();
-    });
-    
-    dateInput.addEventListener('change', function() {
-        const selectedDate = new Date(this.value + 'T00:00:00');
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-        
-        if (selectedDate < yesterday) {
-            showToast('Нельзя просматривать меню дальше вчерашнего дня', true);
-            currentDate = new Date();
-            updateDateDisplay();
-            loadMenu(formatDate(currentDate));
-            return;
-        }
-        
-        currentDate = selectedDate;
-        updateDateDisplay();
-        loadMenu(this.value);
     });
     
     document.getElementById('buyFromReviewsBtn').addEventListener('click', function() {
@@ -228,7 +197,6 @@ function formatDate(date) {
 
 function updateDateDisplay() {
     const dateTextEl = document.getElementById('dateText');
-    const dateInput = document.getElementById('menuDate');
     
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -253,7 +221,6 @@ function updateDateDisplay() {
     }
     
     dateTextEl.textContent = displayText;
-    dateInput.value = formatDate(currentDate);
 }
 
 async function loadWallet() {
