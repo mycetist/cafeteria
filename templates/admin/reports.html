@@ -371,20 +371,28 @@ function displayExpenseReport(data) {
         </div>
     `;
 
+    const totalRevenue = data.revenue?.total || 0;
+    const revenueByType = data.revenue?.by_type || {};
+    const singleRevenue = revenueByType.single || 0;
+    const subscriptionRevenue = revenueByType.subscription || 0;
+    const totalExpenses = data.expenses?.total || 0;
+    const netProfit = data.net || 0;
+    const dailyRevenue = data.revenue?.daily || [];
+
     const summaryHtml = `
         <div class="col-sm-6 col-lg-3">
             <div class="stat-card stat-card-success">
                 <div class="stat-content">
                     <div class="stat-label">Общий доход</div>
-                    <div class="stat-value">${(data.total_revenue || 0).toFixed(2)} ₽</div>
+                    <div class="stat-value">${totalRevenue.toFixed(2)} ₽</div>
                 </div>
             </div>
         </div>
         <div class="col-sm-6 col-lg-3">
-            <div class="stat-card stat-card-primary">
+            <div class="stat-card stat-card-danger">
                 <div class="stat-content">
-                    <div class="stat-label">Транзакций</div>
-                    <div class="stat-value">${data.total_transactions || 0}</div>
+                    <div class="stat-label">Расходы</div>
+                    <div class="stat-value">${totalExpenses.toFixed(2)} ₽</div>
                 </div>
             </div>
         </div>
@@ -392,7 +400,7 @@ function displayExpenseReport(data) {
             <div class="stat-card stat-card-info">
                 <div class="stat-content">
                     <div class="stat-label">Разовые платежи</div>
-                    <div class="stat-value">${(data.single_revenue || 0).toFixed(2)} ₽</div>
+                    <div class="stat-value">${singleRevenue.toFixed(2)} ₽</div>
                 </div>
             </div>
         </div>
@@ -400,7 +408,7 @@ function displayExpenseReport(data) {
             <div class="stat-card stat-card-warning">
                 <div class="stat-content">
                     <div class="stat-label">Абонементы</div>
-                    <div class="stat-value">${(data.subscription_revenue || 0).toFixed(2)} ₽</div>
+                    <div class="stat-value">${subscriptionRevenue.toFixed(2)} ₽</div>
                 </div>
             </div>
         </div>
@@ -412,15 +420,22 @@ function displayExpenseReport(data) {
         window.reportChartInstance.destroy();
     }
 
+    const dates = dailyRevenue.map(d => {
+        const date = new Date(d.date);
+        return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
+    });
+    const amounts = dailyRevenue.map(d => d.amount);
+
     window.reportChartInstance = new Chart(ctx, {
-        type: 'doughnut',
+        type: 'line',
         data: {
-            labels: ['Разовые платежи', 'Абонементы'],
+            labels: dates,
             datasets: [{
-                data: [data.single_revenue || 0, data.subscription_revenue || 0],
-                backgroundColor: ['rgba(13, 110, 253, 0.8)', 'rgba(25, 135, 84, 0.8)'],
-                borderColor: ['rgb(13, 110, 253)', 'rgb(25, 135, 84)'],
-                borderWidth: 1
+                label: 'Выручка (₽)',
+                data: amounts,
+                borderColor: 'rgb(25, 135, 84)',
+                backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                tension: 0.1
             }]
         },
         options: {
@@ -428,7 +443,7 @@ function displayExpenseReport(data) {
             plugins: {
                 title: {
                     display: true,
-                    text: 'Распределение доходов'
+                    text: 'Динамика выручки'
                 }
             }
         }
@@ -436,28 +451,34 @@ function displayExpenseReport(data) {
 
     let tableHeadHtml = `
         <tr>
-            <th>Тип</th>
-            <th>Количество</th>
+            <th>Дата</th>
             <th>Сумма (₽)</th>
         </tr>
     `;
     document.getElementById('reportTableHead').innerHTML = tableHeadHtml;
 
-    let tableBodyHtml = `
-        <tr>
-            <td><span class="badge bg-primary">Разовые платежи</span></td>
-            <td>${data.single_count || 0}</td>
-            <td>${(data.single_revenue || 0).toFixed(2)}</td>
-        </tr>
-        <tr>
-            <td><span class="badge bg-success">Абонементы</span></td>
-            <td>${data.subscription_count || 0}</td>
-            <td>${(data.subscription_revenue || 0).toFixed(2)}</td>
-        </tr>
+    let tableBodyHtml = '';
+    dailyRevenue.forEach(day => {
+        const formattedDate = new Date(day.date).toLocaleDateString('ru-RU');
+        tableBodyHtml += `
+            <tr>
+                <td>${formattedDate}</td>
+                <td>${day.amount.toFixed(2)}</td>
+            </tr>
+        `;
+    });
+    tableBodyHtml += `
         <tr class="table-active">
-            <td><strong>Итого</strong></td>
-            <td><strong>${data.total_transactions || 0}</strong></td>
-            <td><strong>${(data.total_revenue || 0).toFixed(2)}</strong></td>
+            <td><strong>Итого доход</strong></td>
+            <td><strong>${totalRevenue.toFixed(2)}</strong></td>
+        </tr>
+        <tr class="table-danger">
+            <td><strong>Расходы</strong></td>
+            <td><strong>${totalExpenses.toFixed(2)}</strong></td>
+        </tr>
+        <tr class="table-success">
+            <td><strong>Чистая прибыль</strong></td>
+            <td><strong>${netProfit.toFixed(2)}</strong></td>
         </tr>
     `;
     document.getElementById('reportTableBody').innerHTML = tableBodyHtml;
@@ -534,11 +555,18 @@ function exportReport(data, filename, format) {
             csv += `Average Per Day,${data.summary?.average_per_day || 0}\n`;
             csv += `Breakfast,${data.summary?.meal_type_breakdown?.breakfast || 0}\n`;
             csv += `Lunch,${data.summary?.meal_type_breakdown?.lunch || 0}\n`;
-        } else {
-            csv = 'Type,Count,Amount\n';
-            csv += `Single Payments,${data.single_count || 0},${data.single_revenue || 0}\n`;
-            csv += `Subscriptions,${data.subscription_count || 0},${data.subscription_revenue || 0}\n`;
-            csv += `Total,${data.total_transactions || 0},${data.total_revenue || 0}\n`;
+        } else if (data.report_type === 'financial') {
+            csv = 'Date,Revenue\n';
+            const dailyRevenue = data.revenue?.daily || [];
+            dailyRevenue.forEach(day => {
+                csv += `${day.date},${day.amount}\n`;
+            });
+            csv += '\nSummary\n';
+            csv += `Total Revenue,${data.revenue?.total || 0}\n`;
+            csv += `Single Payments,${data.revenue?.by_type?.single || 0}\n`;
+            csv += `Subscriptions,${data.revenue?.by_type?.subscription || 0}\n`;
+            csv += `Total Expenses,${data.expenses?.total || 0}\n`;
+            csv += `Net Profit,${data.net || 0}\n`;
         }
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
