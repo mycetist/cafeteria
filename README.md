@@ -4,11 +4,11 @@
 
 ## Технологии
 
-**Backend:** Python / Flask
-**Frontend:** Bootstrap 5 + JavaScript
-**База данных:** SQLite / MySQL
-**Аутентификация:** JWT
-**Контейнеризация:** Docker
+- **Backend:** Python / Flask
+- **Frontend:** Bootstrap 5 + JavaScript
+- **База данных:** SQLite / MySQL
+- **Аутентификация:** JWT
+- **Контейнеризация:** Docker
 
 ## Основные возможности
 
