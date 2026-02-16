@@ -2,6 +2,9 @@
 
 ![Превью сайта](static/images/site-preview.png)
 
+Ссылка на видео: https://vkvideo.ru/video-236066007_456239017
+Ссылка на репозиторий: https://github.com/mycetist/cafeteria
+
 ## Технологии
 
 - **Backend:** Python / Flask
